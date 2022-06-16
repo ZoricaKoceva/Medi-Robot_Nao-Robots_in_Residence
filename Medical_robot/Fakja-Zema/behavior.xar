@@ -1,0 +1,2049 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ChoregrapheProject xmlns="http://www.ald.softbankrobotics.com/schema/choregraphe/project.xsd" xar_version="3">
+  <Box name="root" id="-1" localization="8" tooltip="Root box of Choregraphe&apos;s behavior. Highest level possible." x="0" y="0">
+    <bitmap>media/images/box/root.png</bitmap>
+    <script language="4">
+      <content>
+        <![CDATA[]]>
+      </content>
+    </script>
+    <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+    <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+    <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+    <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+    <Timeline enable="0">
+      <BehaviorLayer name="behavior_layer1">
+        <BehaviorKeyframe name="keyframe1" index="1">
+          <Diagram>
+            <Box name="Get Data" id="3" localization="8" tooltip="Retrieves from NAOqi&apos;s shared memory the given value at the given key." x="416" y="164">
+              <bitmap>media/images/box/sensors/STM.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        pass
+
+    def onLoad(self):
+        self.memory = self.session().service("ALMemory")
+
+    def onUnload(self):
+        self.memory = None
+
+    def onInput_onStart(self):
+        result = self.memory.getData(self.getParameter("key"))
+        self.onStopped(result)
+
+    def onInput_onStop(self):
+        self.onUnload() #~ it is recommended to call onUnload of this box in a onStop method, as the code written in onUnload is used to stop the box as well
+        pass]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="0" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished. It contains the retrieved value from ALMemory." id="4" />
+              <Output name="onError" type="3" type_size="1" nature="1" inner="0" tooltip="Output when error is raised by the behavior. Contains the error message." id="5" />
+              <Parameter name="key" inherits_from_parent="0" content_type="3" value="MyApplication/MyData" default_value="MyApplication/MyData" custom_choice="0" tooltip="" id="6" />
+            </Box>
+            <Box name="Insert Data" id="1" localization="8" tooltip="Stores in NAOqi&apos;s shared memory the given value at the given key." x="416" y="40">
+              <bitmap>media/images/box/sensors/STM.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        pass
+
+    def onLoad(self):
+        self.memory = self.session().service("ALMemory")
+
+    def onUnload(self):
+        self.memory = None
+
+    def onInput_onStart(self, p):
+        self.memory.insertData(self.getParameter("key"), p)
+        self.onStopped(p)
+
+    def onInput_onStop(self):
+        self.onUnload() #~ it is recommended to call onUnload of this box in a onStop method, as the code written in onUnload is used to stop the box as well
+        pass]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="0" type_size="1" nature="2" inner="0" tooltip="Receives the value to be inserted in ALMemory." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="0" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished. It contains the inserted value in ALMemory." id="4" />
+              <Output name="onError" type="3" type_size="1" nature="1" inner="0" tooltip="Output when error is raised by the behavior. Contains the error message." id="5" />
+              <Parameter name="key" inherits_from_parent="0" content_type="3" value="MyApplication/MyData" default_value="MyApplication/MyData" custom_choice="0" tooltip="" id="6" />
+            </Box>
+            <Box name="Hands" id="2" localization="8" tooltip="the robot stiffens the motors of one or both of his hands so that he can open or close&#x0A;it/them. Then he relaxes the motors of his hand(s)." x="159" y="32">
+              <bitmap>media/images/box/movement/move_arm.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.motion = self.session().service( "ALMotion" )
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        if( self.bIsRunning ):
+            return
+        self.bIsRunning = True
+        try:
+            hands = []
+            if( self.getParameter("Side") in ["Left", "Both"] ):
+                hands.append( "LHand" )
+            if( self.getParameter("Side") in ["Right", "Both"] ):
+                hands.append( "RHand" )
+            motionOps = []
+            for hand in hands:
+                if( self.getParameter("Action") == "Open the hand" ):
+                    motionOps.append( self.motion.openHand(hand, _async=True) )
+                else:
+                    motionOps.append( self.motion.closeHand(hand, _async=True) )
+            for motionOp in motionOps:
+                motionOp.wait()
+        finally:
+            self.bIsRunning = False
+            self.onDone() # activate output of the box]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Output name="onDone" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+              <Parameter name="Side" inherits_from_parent="0" content_type="3" value="Right" default_value="Both" custom_choice="0" tooltip="Choose the hand to move or both of them." id="4">
+                <Choice value="Both" />
+                <Choice value="Left" />
+                <Choice value="Right" />
+              </Parameter>
+              <Parameter name="Action" inherits_from_parent="0" content_type="3" value="Open the hand" default_value="Open the hand" custom_choice="0" tooltip="Action you want to make on the robot&apos;s hand." id="5">
+                <Choice value="Open the hand" />
+                <Choice value="Close the hand" />
+              </Parameter>
+              <Resource name="Camera setting" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Look At" id="9" localization="-1" tooltip="This box makes the robot look at a desired position." x="162" y="166">
+              <bitmap>media/images/box/movement/move_head.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[import time
+
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
+
+        self.maxSpeed = 0.5
+
+        self.useWholeBody = False
+        self.frame = 0 #FRAME TORSO
+
+    def onLoad(self):
+        self.tracker = self.session().service( "ALTracker" )
+        self.BIND_PYTHON(self.getName(), "setParameter")
+
+    def onUnload(self):
+        pass
+
+    def onInput_onStart(self):
+        self.x = self.getParameter("X (m)")
+        self.y = self.getParameter("Y (m)")
+        self.z = self.getParameter("Z (m)")
+
+        self.maxSpeed = self.getParameter("Speed (%)") / 100.0
+        self.useWholeBody = self.getParameter("WholeBody")
+
+        frameStr = self.getParameter("Frame")
+        if frameStr == "Torso":
+            self.frame = 0
+        elif frameStr == "World":
+            self.frame = 1
+        elif frameStr == "Robot":
+            self.frame = 2
+
+        self.tracker.lookAt([self.x, self.y, self.z], self.frame, self.maxSpeed, self.useWholeBody)
+        self.onStopped()
+
+    def onInput_onStop(self):
+        self.onUnload()
+        pass
+
+    def setParameter(self, parameterName, newValue):
+        GeneratedClass.setParameter(self, parameterName, newValue)
+
+        if (parameterName == "X (m)"):
+            self.x = newValue
+            self.tracker.lookAt([self.x, self.y, self.z], self.frame, self.maxSpeed, self.useWholeBody)
+            self.onStopped()
+            return
+
+        if (parameterName == "Y (m)"):
+            self.y = newValue
+            self.tracker.lookAt([self.x, self.y, self.z], self.frame, self.maxSpeed, self.useWholeBody)
+            self.onStopped()
+            return
+
+        if (parameterName == "Z (m)"):
+            self.z = newValue
+            self.tracker.lookAt([self.x, self.y, self.z], self.frame, self.maxSpeed, self.useWholeBody)
+            self.onStopped()
+            return
+
+        if (parameterName == "Speed (%)"):
+            self.maxSpeed = newValue / 100.0
+            return
+
+        if (parameterName == "WholeBody"):
+            self.useWholeBody = newValue
+            return
+
+        if (parameterName == "Frame"):
+            if(newValue == "Torso"):
+                self.frame = 0
+            elif newValue == "World":
+                self.frame = 1
+            elif newValue == "Robot":
+                self.frame = 2]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+              <Parameter name="X (m)" inherits_from_parent="0" content_type="2" value="1" default_value="1" min="0.001" max="10" tooltip="X coordinate of the target to look at." id="5" />
+              <Parameter name="Y (m)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="Y coordinate of the target to look at." id="6" />
+              <Parameter name="Z (m)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="Z coordinate of the target to look at." id="7" />
+              <Parameter name="Speed (%)" inherits_from_parent="0" content_type="1" value="50" default_value="50" min="1" max="100" tooltip="Speed to move the head towards the desired position." id="8" />
+              <Parameter name="WholeBody" inherits_from_parent="0" content_type="0" value="0" default_value="0" tooltip="Use whole body constraints" id="9" />
+              <Parameter name="Frame" inherits_from_parent="0" content_type="3" value="Torso" default_value="Torso" custom_choice="0" tooltip="Select the frame of target." id="10">
+                <Choice value="Torso" />
+                <Choice value="World" />
+                <Choice value="Robot" />
+              </Parameter>
+            </Box>
+            <Box name="Select Camera" id="5" localization="8" tooltip="Change the currently used camera." x="158" y="310">
+              <bitmap>media/images/box/interaction/look.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.cameraModule = self.session().service( "ALVideoDevice" )
+
+    def onUnload(self):
+        pass
+
+    def onInput_onUseTopCamera(self):
+        self.cameraModule.setActiveCamera( 0 )
+        self.onReady()
+
+    def onInput_onUseBottomCamera(self):
+        self.cameraModule.setActiveCamera( 1 )
+        self.onReady()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onUseTopCamera" type="1" type_size="1" nature="1" inner="0" tooltip="Use the camera at the top of the head (forehead)." id="2" />
+              <Input name="onUseBottomCamera" type="1" type_size="1" nature="1" inner="0" tooltip="Use the camera at the bottom of the head (mouth)." id="3" />
+              <Output name="onReady" type="1" type_size="1" nature="2" inner="0" tooltip="The camera change is done." id="4" />
+              <Resource name="Camera setting" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Take Picture" id="6" localization="8" tooltip="Take a picture with one of the cameras camera and store it in his memory in ~/recordings/cameras. The image format is JPG.&#x0A;&#x0A;V1.1.0&#x0A;" x="159" y="439">
+              <bitmap>media/images/box/interaction/picture.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[import time
+
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+        self.resolutionMap = {
+            '160 x 120': 0,
+            '320 x 240': 1,
+            '640 x 480': 2,
+            '1280 x 960': 3
+        }
+        self.cameraMap = {
+            'Top': 0,
+            'Bottom': 1
+        }
+
+        self.recordFolder = "/home/nao/recordings/cameras/"
+
+    def onLoad(self):
+        self.bIsRunning = False
+        try:
+            self.photoCapture = self.session().service( "ALPhotoCapture" )
+        except Exception as e:
+            self.photoCapture = None
+            self.logger.error(e)
+
+    def onUnload(self):
+        pass
+
+    def onInput_onStart(self):
+        if( self.bIsRunning ):
+            return
+        self.bIsRunning = True
+        resolution = self.resolutionMap[self.getParameter("Resolution")]
+        cameraID = self.cameraMap[self.getParameter("Camera")]
+        fileName = self.getParameter("File Name")
+        if self.photoCapture:
+            self.photoCapture.setResolution(resolution)
+            self.photoCapture.setCameraID(cameraID)
+            self.photoCapture.setPictureFormat("jpg")
+            self.photoCapture.takePicture( self.recordFolder, fileName )
+        self.bIsRunning = False
+        self.onStopped()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+              <Parameter name="Resolution" inherits_from_parent="0" content_type="3" value="640 x 480" default_value="640 x 480" custom_choice="0" tooltip="Image resolution." id="4">
+                <Choice value="160 x 120" />
+                <Choice value="320 x 240" />
+                <Choice value="640 x 480" />
+                <Choice value="1280 x 960" />
+              </Parameter>
+              <Parameter name="File Name" inherits_from_parent="0" content_type="3" value="image" default_value="image" custom_choice="0" tooltip="Name of the file without its extension." id="5" />
+              <Parameter name="Camera" inherits_from_parent="0" content_type="3" value="Top" default_value="Top" custom_choice="0" tooltip="Enables to select the camera (Top or Bottom) that will take the picture." id="6">
+                <Choice value="Top" />
+                <Choice value="Bottom" />
+              </Parameter>
+            </Box>
+            <Box name="Right_close" id="7" localization="8" tooltip="the robot stiffens the motors of one or both of his hands so that he can open or close&#x0A;it/them. Then he relaxes the motors of his hand(s)." x="710" y="196">
+              <bitmap>media/images/box/movement/move_arm.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.motion = self.session().service( "ALMotion" )
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        if( self.bIsRunning ):
+            return
+        self.bIsRunning = True
+        try:
+            hands = []
+            if( self.getParameter("Side") in ["Left", "Both"] ):
+                hands.append( "LHand" )
+            if( self.getParameter("Side") in ["Right", "Both"] ):
+                hands.append( "RHand" )
+            motionOps = []
+            for hand in hands:
+                if( self.getParameter("Action") == "Open the hand" ):
+                    motionOps.append( self.motion.openHand(hand, _async=True) )
+                else:
+                    motionOps.append( self.motion.closeHand(hand, _async=True) )
+            for motionOp in motionOps:
+                motionOp.wait()
+        finally:
+            self.bIsRunning = False
+            self.onDone() # activate output of the box]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Output name="onDone" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+              <Parameter name="Side" inherits_from_parent="0" content_type="3" value="Right" default_value="Both" custom_choice="0" tooltip="Choose the hand to move or both of them." id="4">
+                <Choice value="Both" />
+                <Choice value="Left" />
+                <Choice value="Right" />
+              </Parameter>
+              <Parameter name="Action" inherits_from_parent="0" content_type="3" value="Close the hand" default_value="Open the hand" custom_choice="0" tooltip="Action you want to make on the robot&apos;s hand." id="5">
+                <Choice value="Open the hand" />
+                <Choice value="Close the hand" />
+              </Parameter>
+              <Resource name="Camera setting" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Represent Object" id="8" localization="8" tooltip="This box allows push and remove a single object from the WorldRepresentation.&#x0A;&#x0A;Objects stored in the WorldRepresentation with this box can be visualized in the 3D robot view. See parameters for more details." x="192" y="763">
+              <bitmap>media/images/box/world_representation/world_rep.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="Display" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior start displaying when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this Input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+              <Output name="onError" type="3" type_size="1" nature="2" inner="0" tooltip="Standard onError output." id="5" />
+              <Parameter name="objectName" inherits_from_parent="0" content_type="3" value="MyObject" default_value="MyObject" custom_choice="1" tooltip="Name of the object created in the WorldRepresentation." id="6" />
+              <Parameter name="parentName" inherits_from_parent="0" content_type="3" value="Robot" default_value="World" custom_choice="1" tooltip="Name of the parent of the object in the WorldRepresentation.&#x0A;&#x0A;The position is expressed in the frame of this parent." id="7">
+                <Choice value="World" />
+                <Choice value="Robot" />
+                <Choice value="Robot_Torso" />
+                <Choice value="Robot_Head" />
+              </Parameter>
+              <Parameter name="categoryName" inherits_from_parent="0" content_type="3" value="UserObjects" default_value="UserObjects" custom_choice="1" tooltip="Name of the category of the object in the WorldRepresentation." id="8" />
+              <Parameter name="x" inherits_from_parent="0" content_type="2" value="1" default_value="2" min="-10" max="10" tooltip="x position of the object in the frame of its parent." id="9" />
+              <Parameter name="y" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="y position of the object in the frame of its parent." id="10" />
+              <Parameter name="z" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="z position of the object in the frame of its parent." id="11" />
+              <Parameter name="Wx" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around x axis of the object in the frame of its parent." id="12" />
+              <Parameter name="Wy" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around y axis of the object in the frame of its parent." id="13" />
+              <Parameter name="Wz" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around z axis of the object in the frame of its parent." id="14" />
+              <Parameter name="model" inherits_from_parent="0" content_type="3" value="sphere" default_value="sphere" custom_choice="1" tooltip="Name of the 3D model to be used to display the object in the 3D Robot View." id="15">
+                <Choice value="sphere" />
+                <Choice value="cylinder" />
+                <Choice value="human" />
+              </Parameter>
+              <Parameter name="colorR" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Red component of the color of the 3D model of the object." id="16" />
+              <Parameter name="colorG" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Blue component of the color of the 3D model of the object." id="17" />
+              <Parameter name="colorB" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Blue component of the color of the 3D model of the object." id="18" />
+              <Parameter name="scaleX" inherits_from_parent="0" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the x axis of the 3D model of the object." id="19" />
+              <Parameter name="scaleY" inherits_from_parent="0" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the y axis of the 3D model of the object." id="20" />
+              <Parameter name="scaleZ" inherits_from_parent="0" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the z axis of the 3D model of the object." id="21" />
+              <Timeline enable="0">
+                <BehaviorLayer name="behavior_layer1">
+                  <BehaviorKeyframe name="keyframe1" index="1">
+                    <Diagram scale="100">
+                      <Box name="World Rep Manager" id="1" localization="8" tooltip="This simple box handles parameters and input / outputs to standard World Representation boxes." x="191" y="131">
+                        <bitmap>media/images/box/box-python-script.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    OBJECT_NAME_STR = "objectName"
+    PARENT_NAME_STR = "parentName"
+    CATEGORY_NAME_STR = "categoryName"
+    POSITION_STR = "position"
+    X_STR = "x"
+    Y_STR = "y"
+    Z_STR = "z"
+    WX_STR = "Wx"
+    WY_STR = "Wy"
+    WZ_STR = "Wz"
+    MODEL_STR = "model"
+    RED_STR = "colorR"
+    GREEN_STR = "colorG"
+    BLUE_STR = "colorB"
+    SCALE_X_STR = "scaleX"
+    SCALE_Y_STR = "scaleY"
+    SCALE_Z_STR = "scaleZ"
+
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        self.started = False
+        self.objectName = str()
+        import almath
+        self.position = almath.Position6D()
+        self.displayFields = {self.MODEL_STR: "text",
+            self.RED_STR: "float", self.GREEN_STR: "float",
+            self.BLUE_STR: "float", self.SCALE_X_STR: "float",
+            self.SCALE_Y_STR: "float", self.SCALE_Z_STR: "float"}
+        self.started = False
+        self.BIND_PYTHON(self.getName(), "setParameter")
+        import threading
+        self.lock = threading.Lock()
+
+    def onLoad(self):
+        #put initialization code here
+        pass
+
+    def onUnload(self):
+        #put clean-up code here
+        pass
+
+    def onInput_onStart(self):
+        objectName = self.getParameter(self.OBJECT_NAME_STR)
+        parentName = self.getParameter(self.PARENT_NAME_STR)
+        categoryName = self.getParameter(self.CATEGORY_NAME_STR)
+        self.sendStoreObject([objectName, parentName, categoryName])
+        self.objectName = objectName
+        self.started = True
+        pass
+
+    def onInput_onStorageDone(self):
+        self.sendUpdatePosition([self.objectName,
+            self.getParameter(self.X_STR),
+            self.getParameter(self.Y_STR),
+            self.getParameter(self.Z_STR),
+            self.getParameter(self.WX_STR),
+            self.getParameter(self.WY_STR),
+            self.getParameter(self.WZ_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.MODEL_STR, self.getParameter(self.MODEL_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.RED_STR, self.getParameter(self.RED_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.GREEN_STR, self.getParameter(self.GREEN_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.BLUE_STR, self.getParameter(self.BLUE_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.SCALE_X_STR, self.getParameter(self.SCALE_X_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.SCALE_Y_STR, self.getParameter(self.SCALE_Y_STR)])
+        self.sendUpdateDisplayAttribute([self.objectName, self.SCALE_Z_STR, self.getParameter(self.SCALE_Z_STR)])
+
+    def onInput_onStop(self):
+        self.sendRemoveObject(self.getParameter(self.OBJECT_NAME_STR))
+        self.onUnload() #it is recommended to reuse the clean-up as the box is stopped
+
+    def setParameter(self, parameter, value):
+        if not self.started:
+            return # silently do nothing
+        if parameter is self.OBJECT_NAME_STR:
+            self.removeObject(self.objectName)
+            objectName = self.getParameter(self.OBJECT_NAME_STR)
+            parentName = self.getParameter(self.PARENT_NAME_STR)
+            categoryName = self.getParameter(self.CATEGORY_NAME_STR)
+            self.objectName = objectName
+            self.sendStoreObject([objectName, parentName, categoryName])
+        elif parameter is self.PARENT_NAME_STR:
+            self.removeObject(self.objectName)
+            objectName = self.getParameter(self.OBJECT_NAME_STR)
+            parentName = self.getParameter(self.PARENT_NAME_STR)
+            categoryName = self.getParameter(self.CATEGORY_NAME_STR)
+            self.sendStoreObject([objectName, parentName, categoryName])
+        elif parameter is self.CATEGORY_NAME_STR:
+            if value != self.getParameter(self.CATEGORY_NAME_STR):
+                self.removeObject(self.object[self.OBJECT_NAME_STR])
+                self.setupCategory(value)
+                self.sendStoreObject([objectName, parentName, categoryName])
+        elif parameter in (self.X_STR, self.Y_STR, self.Z_STR, self.WX_STR, self.WY_STR, self.WZ_STR):
+            pose = self.position
+            if parameter == self.X_STR:
+                pose.x = value
+            elif parameter == self.Y_STR:
+                pose.y = value
+            elif parameter == self.Z_STR:
+                pose.z = value
+            elif parameter == self.WX_STR:
+                pose.wx = value
+            elif parameter == self.WY_STR:
+                pose.wy = value
+            elif parameter == self.WZ_STR:
+                pose.wz = value
+            self.sendUpdatePosition([self.objectName,
+                pose.x,
+                pose.y,
+                pose.z,
+                pose.wx,
+                pose.wy,
+                pose.wz])
+            self.position = pose
+        elif parameter in self.displayFields.iterkeys():
+            self.sendUpdateDisplayAttribute([self.objectName, parameter, value])]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+                        <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+                        <Input name="onStorageDone" type="1" type_size="1" nature="1" inner="0" tooltip="To be stimulated when a storage operation has been done.&#x0A;&#x0A;Connect from a storageDone output from a Store World Rep box." id="4" />
+                        <Input name="onMoveDone" type="1" type_size="1" nature="1" inner="0" tooltip="" id="5" />
+                        <Output name="sendStoreObject" type="0" type_size="1" nature="2" inner="0" tooltip="Stimulated when a storing object has been requested.&#x0A;&#x0A;Connect to Store World Rep box onStoreObject input." id="6" />
+                        <Output name="sendRemoveObject" type="3" type_size="1" nature="2" inner="0" tooltip="Stimulated when a deleting object has been requested.&#x0A;&#x0A;Connect to Store World Rep box onRemoveObject input." id="7" />
+                        <Output name="sendUpdatePosition" type="0" type_size="1" nature="2" inner="0" tooltip="Stimulated when a position update of the object has been requested.&#x0A;&#x0A;Connect to Move World Rep box updatePosition input." id="8" />
+                        <Output name="sendUpdateDisplayAttribute" type="0" type_size="1" nature="2" inner="0" tooltip="Stimulated when a display attribute update of the object has been requested.&#x0A;&#x0A;Connect to Display World Rep box updateDisplay input." id="9" />
+                        <Parameter name="objectName" inherits_from_parent="1" content_type="3" value="MyObject" default_value="" custom_choice="1" tooltip="Name of the object created in the WorldRepresentation." id="10" />
+                        <Parameter name="parentName" inherits_from_parent="1" content_type="3" value="World" default_value="Robot_CameraTop" custom_choice="1" tooltip="Name of the parent of the object in the WorldRepresentation.&#x0A;&#x0A;The position is expressed in the frame of this parent." id="11">
+                          <Choice value="World" />
+                          <Choice value="Robot" />
+                          <Choice value="Robot_Torso" />
+                          <Choice value="Robot_Head" />
+                          <Choice value="Robot_CameraTop" />
+                        </Parameter>
+                        <Parameter name="categoryName" inherits_from_parent="1" content_type="3" value="Default" default_value="" custom_choice="1" tooltip="Name of the category of the object in the WorldRepresentation." id="12" />
+                        <Parameter name="x" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="x position of the object in the frame of its parent." id="13" />
+                        <Parameter name="y" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="y position of the object in the frame of its parent." id="14" />
+                        <Parameter name="z" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="-10" max="10" tooltip="z position of the object in the frame of its parent." id="15" />
+                        <Parameter name="Wx" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around x axis of the object in the frame of its parent." id="16" />
+                        <Parameter name="Wy" inherits_from_parent="1" content_type="2" value="-0.753984" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around y axis of the object in the frame of its parent." id="17" />
+                        <Parameter name="Wz" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="-3.1416" max="3.1416" tooltip="rotation around z axis of the object in the frame of its parent." id="18" />
+                        <Parameter name="model" inherits_from_parent="1" content_type="3" value="sphere" default_value="sphere" custom_choice="1" tooltip="Name of the 3D model to be used to display the object in the 3D Robot View." id="19">
+                          <Choice value="sphere" />
+                          <Choice value="cylinder" />
+                          <Choice value="human" />
+                        </Parameter>
+                        <Parameter name="colorR" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Red component of the color of the 3D model of the object." id="20" />
+                        <Parameter name="colorG" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Green component of the color of the 3D model of the object. " id="21" />
+                        <Parameter name="colorB" inherits_from_parent="1" content_type="2" value="0" default_value="0" min="0" max="1" tooltip="Blue component of the color of the 3D model of the object. " id="22" />
+                        <Parameter name="scaleX" inherits_from_parent="1" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the x axis of the 3D model of the object." id="23" />
+                        <Parameter name="scaleY" inherits_from_parent="1" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the y axis of the 3D model of the object" id="24" />
+                        <Parameter name="scaleZ" inherits_from_parent="1" content_type="2" value="1" default_value="1" min="-10" max="10" tooltip="Scale along the z axis of the 3D model of the object" id="25" />
+                      </Box>
+                      <Box name="Create Object Representation" id="5" localization="8" tooltip="This box allows to simply store and remove objects from the world representation.&#x0A;&#x0A;Objects stored in the WorldRepresentation with this box can be visualized in the 3D robot view. See the other World Representation boxes for more details." x="497" y="32">
+                        <bitmap>media/images/box/world_representation/world_rep.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    REMOVE_ON_QUIT_STR = "removeOnQuit"
+
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        import threading
+        self.lock = threading.Lock()
+
+    def onLoad(self):
+        try:
+            self.wr = self.session().service("ALWorldRepresentation")
+        except Exception as e:
+            self.onError(e)
+        self.objects = []
+        pass
+
+    def onUnload(self):
+        #put clean-up code here
+        if self.getParameter(self.REMOVE_ON_QUIT_STR):
+            for object in self.objects:
+                self.onInput_removeObject(str(object))
+        pass
+
+    def onInput_storeObject(self, p):
+        objectName = str()
+        parentName = "World"
+        categoryName = "UserObjects"
+        position = [0, 0, 0, 0, 0, 0]
+        try:
+            if isinstance(p, basestring):
+                raise Exception("%s is a string, not a list" % (p))
+            objectName = p[0]
+            if len(p) >= 2:
+                parentName = p[1]
+            if len(p) >= 3:
+                categoryName = p[2]
+            if len(p) == 4:
+                position = p[3]
+        except Exception as e:
+            self.logger.error("onInput_onStart(%s): error in parameters "\
+                "(see tooltip for details on expected parameter format)" % (p))
+            return
+        self.lock.acquire()
+        self.createCategory(categoryName)
+        self.storeObject(objectName, parentName, categoryName, position)
+        self.objects.append(objectName)
+        self.storageDone(objectName)
+        self.lock.release()
+
+    def onInput_removeObject(self, objectName):
+        if not isinstance(objectName, basestring):
+            self.logger.error("onInput_removeObject(%s): expected a string" \
+                " (see tooltip for details)" % (objectName))
+        self.lock.acquire()
+        self.removeObject(objectName)
+        try:
+            self.objects.remove(objectName)
+        except:
+            pass
+        self.removalDone(objectName)
+        self.lock.release()
+
+    def createCategory(self, categoryName):
+        ret = 0
+        try:
+            ret = self.wr.createObjectCategory(categoryName, False)
+        except Exception as e:
+            self.logger.warning("wr.createObjectCategory(%s, %s) error code: %s"
+                % (categoryName, False, e))
+
+    def storeObject(self, objectName, parentName, categoryName, position):
+        ret = 0
+        defaultAttributes = []
+        try:
+            ret = self.wr.storeObject(objectName, parentName, position, categoryName, defaultAttributes)
+        except Exception as e:
+            self.logger.warning("wr.storeObject(%s, %s, %s, %s, %s) error: %s"
+                % (objectName, parentName, position, categoryName, defaultAttributes, e))
+
+    def removeObject(self, objectName):
+        ret = 0
+        try:
+            ret = self.wr.clearObject(objectName)
+        except Exception as e:
+            self.logger.warning("wr.clearObject(%s) error: %s" % (objectName, e))]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="storeObject" type="0" type_size="1" nature="1" inner="0" tooltip="Store a new object in the World Representation.&#x0A;The parameters are expected as follows:&#x0A;[ObjectName, (ParentObjectName), (CategoryName), (Position)]&#x0A;&#x0A;ObjectName is a string that identifies the object in the World Representation.&#x0A;&#x0A;ParentObjectName is the string identifier of the parent object in the World Representation. &#x0A;The object will be added in the frame of the parent object.&#x0A;The parent name cannot be changed at runtime.&#x0A;If no value is provided, the object will be added in the default world frame.&#x0A;&#x0A;CategoryName is the string identifying the Category to put the object in.&#x0A;If no value is provided, the object will be added in the &apos;Default&apos; category.&#x0A;&#x0A;Position is a string with the following layout [x, y, z, Wx, Wy, Wz]. It is the position of the object in the frame of its parent.&#x0A;The default value is [0, 0, 0, 0, 0, 0]" id="2" />
+                        <Input name="removeObject" type="3" type_size="1" nature="1" inner="0" tooltip="Removes an Object identified with the supplied string from the WorldRepresentation." id="3" />
+                        <Output name="storageDone" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when the storage of the given object is finished." id="4" />
+                        <Output name="removalDone" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when the removal of the given object is finished." id="5" />
+                        <Output name="onError" type="3" type_size="1" nature="2" inner="0" tooltip="Standard onError output." id="6" />
+                        <Parameter name="removeOnQuit" inherits_from_parent="0" content_type="0" value="1" default_value="1" tooltip="Remove the created objects when quitting." id="7" />
+                      </Box>
+                      <Box name="Move Object Representation" id="4" localization="8" tooltip="This box allows to simply move objects from the world representation.&#x0A;&#x0A;Objects stored in the WorldRepresentation with this box can be visualized in the 3D robot view. See the other World Representation boxes for more details." x="491" y="147">
+                        <bitmap>media/images/box/world_representation/world_rep.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+
+    def onLoad(self):
+        #put initialization code here
+        try:
+            self.wr = self.session().service("ALWorldRepresentation")
+        except Exception as e:
+            self.onError(e)
+        pass
+
+    def onUnload(self):
+        #put clean-up code here
+        pass
+
+    def onInput_updatePosition(self, p):
+        objectName = str()
+        import almath
+        pose = almath.Position6D(0, 0, 0, 0, 0, 0)
+        try:
+            if isinstance(p, basestring):
+                raise Exception("onInput_updatePosition(%s): expected a list "\
+                    "(see tooltip for details)" % (p))
+            objectName = p[0]
+            parentName = self.getObjectParent(objectName)
+            poseVec = self.getPosition6D(objectName, parentName)
+            pose = almath.Position6D(
+                poseVec[0],
+                poseVec[1],
+                poseVec[2],
+                poseVec[3],
+                poseVec[4],
+                poseVec[5])
+            if len(p) >= 4:
+                pose.x = p[1]
+                pose.y = p[2]
+                pose.z = p[3]
+            if len(p) >= 7:
+                pose.wx = p[4]
+                pose.wy = p[5]
+                pose.wz = p[6]
+        except Exception as e:
+            self.logger.error("onInput_updatePosition(%s): error in parameters "\
+                "(see tooltip for details on expected parameter format): %s" % (p, e))
+            return
+        self.updatePosition(objectName, pose)
+        self.done(objectName)
+
+    def getObjectParent(self, objectName):
+        try:
+            parentName = self.wr.getObjectParentName(objectName)
+            return parentName
+        except Exception as e:
+            self.logger.warning("wr.getObjectParent(%s) error: %s" % (objectName, e))
+
+    def getPosition6D(self, objectName, parentName):
+        try:
+            position = self.wr.getPosition6D(objectName, parentName)
+            return position
+        except Exception as e:
+            self.logger.warning("wr.getPosition6D(%s, %s) error: %s" % (objectName, parentName, e))
+
+    def updatePosition(self, objectName, pose):
+        try:
+            vectorPosition = [pose.x, pose.y, pose.z, pose.wx, pose.wy, pose.wz]
+            ret = self.wr.updatePosition(objectName, vectorPosition, True)
+            if ret is not 0:
+                self.logger.warning("wr.updatePosition(%s, %s) error code: %d"
+                    % (objectName, pose, ret))
+        except Exception as e:
+            self.logger.warning("wr.updatePosition(%s, %s) error: %s"
+                % (objectName, pose, e))]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="updatePosition" type="0" type_size="1" nature="1" inner="0" tooltip="updates the position of the object given as argument.&#x0A;&#x0A;The value expected is a list organized as follows [objectName, x, y, z (, Wx, Wy, Wz)]" id="2" />
+                        <Output name="done" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when a processing for the given object is finished." id="3" />
+                        <Output name="onError" type="3" type_size="1" nature="2" inner="0" tooltip="Standard onError output." id="4" />
+                      </Box>
+                      <Box name="Edit Object Representation" id="6" localization="8" tooltip="This box allows to simply edit display properties of objects from the world representation.&#x0A;&#x0A;Objects stored in the WorldRepresentation with this box can be visualized in the 3D robot view. See parameters for more details." x="505" y="267">
+                        <bitmap>media/images/box/world_representation/world_rep.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    DISPLAY_STR = "Display"
+    MODEL_STR = "model"
+    RED_STR = "colorR"
+    GREEN_STR = "colorG"
+    BLUE_STR = "colorB"
+    SCALE_X_STR = "scaleX"
+    SCALE_Y_STR = "scaleY"
+    SCALE_Z_STR = "scaleZ"
+
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        import threading
+        self.lock = threading.Lock()
+        self.displayFields = {self.MODEL_STR: "text",
+            self.RED_STR: "float", self.GREEN_STR: "float",
+            self.BLUE_STR: "float", self.SCALE_X_STR: "float",
+            self.SCALE_Y_STR: "float", self.SCALE_Z_STR: "float"}
+
+    def onLoad(self):
+        try:
+            self.wr = self.session().service("ALWorldRepresentation")
+        except Exception as e:
+            self.onError(e)
+        pass
+
+    def onUnload(self):
+        pass
+
+    def onInput_updateDisplay(self, p):
+        objectName = str()
+        displayAttribute = str()
+        displayAttributeValue = str()
+        try:
+            if isinstance(p, basestring):
+                raise Exception("onInput_updateDisplay(%s): expected a list "\
+                    "(see tooltip for details)" % (p))
+            objectName = p[0]
+            displayAttribute = p[1]
+            displayAttributeValue = p[2]
+        except Exception as e:
+            self.logger.error("onInput_updateDisplay(%s): error in parameters "\
+                "(see tooltip for details on expected parameter format): %s" % (p, e))
+            return
+        self.lock.acquire()
+        categoryName = self.objectCategory(objectName)
+        self.setupDisplayAttribute(categoryName)
+        self.updateDisplayAttribute(objectName, displayAttribute, displayAttributeValue)
+        self.lock.release()
+
+    def objectCategory(self, objectName):
+        try:
+            categoryName = self.wr.getObjectCategory(objectName)
+            return categoryName
+        except Exception as e:
+            self.logger.warning("wr.getObjectCategory(%s) error: %s" % (objectName, e))
+            raise
+
+    def setupDisplayAttribute(self, categoryName):
+        attributesList = []
+        try:
+            attributesList = self.wr.getAttributesFromCategory(categoryName)
+        except Exception as e:
+            self.logger.error("wr.getAttributesFromCategory(%s) error: %s"
+                % (categoryName, e))
+            raise
+        attributesMap = self.fieldsToMap(attributesList)
+        if self.DISPLAY_STR not in attributesMap.keys():
+            try:
+                self.wr.addAttributeToCategory(
+                    categoryName,
+                    self.DISPLAY_STR,
+                    self.fieldsFromMap(self.displayFields))
+            except Exception as e:
+                self.logger.warning("wr.addAttributeToCategory(%s, %s, [%s]) error: %s"
+                    % (categoryName, self.DISPLAY_STR, self.displayFields, e))
+                raise
+        else:
+            displayList = attributesMap[self.DISPLAY_STR]
+            displayMap = self.fieldsToMap(displayList)
+            fieldsMatch = True
+            for key, value in self.displayFields.iteritems():
+                if key not in displayMap.keys():
+                    fieldsMatch = False
+                    break
+                if displayMap[key] != value:
+                    fieldsMatch = False
+                    break
+            if not fieldsMatch:
+                raise Exception("The category %s already exists and its %s(%s) attribute does not match the "\
+                    "standard. Objects will not be displayed." % (categoryName, self.DISPLAY_STR, displayMap))
+        pass
+
+    def updateDisplayAttribute(self, objectName, parameterName, parameterValue):
+        try:
+            ret = self.wr.updateAttribute(
+                objectName,
+                self.DISPLAY_STR,
+                "1",
+                [[parameterName, parameterValue]])
+            if ret is not 0:
+                self.logger.warning("wr.updateAttribute(%s, %s, %s, %s) error code: %d"
+                    %(objectName, self.DISPLAY_STR, "1", [[parameterName, parameterValue]], ret))
+        except Exception as e:
+            self.logger.warning("wr.updateAttribute(%s, %s, %s, %s) error: %s"
+                %(objectName, self.DISPLAY_STR, "1", str([[parameterName, parameterValue]]), e))
+
+
+    @staticmethod
+    def fieldsToMap(attributes):
+        map = dict()
+        for pair in attributes:
+            try:
+                map[pair[0]] = pair[1]
+            except:
+                pass
+        return map
+
+    @staticmethod
+    def fieldsFromMap(map):
+        attributes = list()
+        for key, value in map.iteritems():
+            attributes.append([key, value])
+        return attributes]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="updateDisplay" type="0" type_size="1" nature="1" inner="0" tooltip="updates the given display attribute of the object given as argument.&#x0A;&#x0A;The value expected is a list organized as follows [objectName, displayAttribute, displayValue]&#x0A;&#x0A;The displayAttribute argument is a string.&#x0A;&#x0A;The displayAttributeValue is the corresponding value.&#x0A;&#x0A;A single stimulation of this box sets all the other display parameters to their default values and adds the Display attribute to the object category." id="2" />
+                        <Output name="done" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when a processing for the given object is finished." id="3" />
+                        <Output name="onError" type="3" type_size="1" nature="2" inner="0" tooltip="Standard onError output." id="4" />
+                      </Box>
+                      <Link inputowner="1" indexofinput="2" outputowner="0" indexofoutput="2" />
+                      <Link inputowner="5" indexofinput="2" outputowner="1" indexofoutput="6" />
+                      <Link inputowner="5" indexofinput="3" outputowner="1" indexofoutput="7" />
+                      <Link inputowner="1" indexofinput="4" outputowner="5" indexofoutput="4" />
+                      <Link inputowner="0" indexofinput="5" outputowner="5" indexofoutput="6" />
+                      <Link inputowner="4" indexofinput="2" outputowner="1" indexofoutput="8" />
+                      <Link inputowner="0" indexofinput="5" outputowner="4" indexofoutput="4" />
+                      <Link inputowner="6" indexofinput="2" outputowner="1" indexofoutput="9" />
+                      <Link inputowner="0" indexofinput="5" outputowner="6" indexofoutput="4" />
+                    </Diagram>
+                  </BehaviorKeyframe>
+                </BehaviorLayer>
+              </Timeline>
+            </Box>
+            <Box name="FastPointAtUserLeftArm_01" id="133" localization="8" tooltip="ID : #01B 0002&#x0A;&#x0A;===================&#x0A;&#x0A;Tags : &#x0A;- You&#x0A;- Yourself&#x0A;&#x0A;===================&#x0A;&#x0A;Common dialog : Yes&#x0A;&#x0A;===================&#x0A;&#x0A;Start stance : LeanFront&#x0A;End stance : Center" x="44" y="763">
+              <bitmap>media/images/box/movement/move.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+              <Timeline enable="1" fps="25" start_frame="1" end_frame="-1" size="45">
+                <ActuatorList model="">
+                  <ActuatorCurve name="value" actuator="HeadPitch" mute="0" unit="0">
+                    <Key frame="8" value="-2.9" />
+                    <Key frame="13" value="8.6" />
+                    <Key frame="17" value="-7.6" />
+                    <Key frame="24" value="9.4" />
+                    <Key frame="35" value="-2.1997" />
+                    <Key frame="45" value="-3.34228" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="HeadYaw" mute="0" unit="0">
+                    <Key frame="8" value="-1.40867" />
+                    <Key frame="17" value="-5.89115" />
+                    <Key frame="24" value="-8.26423" />
+                    <Key frame="35" value="-5.45169" />
+                    <Key frame="45" value="-5.45169" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnklePitch" mute="0" unit="0">
+                    <Key frame="8" value="0.612832" />
+                    <Key frame="17" value="1.14019" />
+                    <Key frame="24" value="3.33748" />
+                    <Key frame="35" value="7.29261" />
+                    <Key frame="45" value="8.4352" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnkleRoll" mute="0" unit="0">
+                    <Key frame="8" value="-2.1949" />
+                    <Key frame="17" value="0.178186" />
+                    <Key frame="24" value="1.49656" />
+                    <Key frame="35" value="-2.1949" />
+                    <Key frame="45" value="-2.63435" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowRoll" mute="0" unit="0">
+                    <Key frame="8" value="-81.8248" />
+                    <Key frame="17" value="-35.7" />
+                    <Key frame="24" value="-42.2735" />
+                    <Key frame="35" value="-59.6761" />
+                    <Key frame="45" value="-63.7191" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowYaw" mute="0" unit="0">
+                    <Key frame="8" value="-67.8548" />
+                    <Key frame="17" value="-68.4701" />
+                    <Key frame="24" value="-71.6341" />
+                    <Key frame="35" value="-55.6379" />
+                    <Key frame="45" value="-53.2648" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHand" mute="0" unit="1">
+                    <Key frame="8" value="0.0984" />
+                    <Key frame="17" value="0.84" />
+                    <Key frame="24" value="0.7" />
+                    <Key frame="35" value="0.436" />
+                    <Key frame="45" value="0.3828" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipPitch" mute="0" unit="0">
+                    <Key frame="8" value="25.5789" />
+                    <Key frame="17" value="12.3951" />
+                    <Key frame="24" value="16.9655" />
+                    <Key frame="35" value="13.6256" />
+                    <Key frame="45" value="12.8346" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipRoll" mute="0" unit="0">
+                    <Key frame="8" value="3.43018" />
+                    <Key frame="17" value="0.0902951" />
+                    <Key frame="24" value="-0.876518" />
+                    <Key frame="35" value="3.95753" />
+                    <Key frame="45" value="5.10013" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipYawPitch" mute="0" unit="0">
+                    <Key frame="8" value="-18.1033" />
+                    <Key frame="17" value="-19.8611" />
+                    <Key frame="24" value="-20.1248" />
+                    <Key frame="35" value="-20.3006" />
+                    <Key frame="45" value="-20.0369" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LKneePitch" mute="0" unit="0">
+                    <Key frame="8" value="-4.66066" />
+                    <Key frame="17" value="2.28279" />
+                    <Key frame="24" value="-4.22121" />
+                    <Key frame="35" value="-4.3091" />
+                    <Key frame="45" value="-4.04543" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderPitch" mute="0" unit="0">
+                    <Key frame="8" value="61.4339" />
+                    <Key frame="17" value="49" />
+                    <Key frame="24" value="51.2385" />
+                    <Key frame="35" value="68.9047" />
+                    <Key frame="45" value="68.1137" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderRoll" mute="0" unit="0">
+                    <Key frame="8" value="1.49175" />
+                    <Key frame="17" value="-0.00240423" />
+                    <Key frame="24" value="0.0854867" />
+                    <Key frame="35" value="-0.529749" />
+                    <Key frame="45" value="-1.76024" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LWristYaw" mute="0" unit="0">
+                    <Key frame="8" value="-52.6496" />
+                    <Key frame="17" value="-52.0343" />
+                    <Key frame="24" value="-52.6496" />
+                    <Key frame="35" value="-5.80326" />
+                    <Key frame="45" value="8.34731" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnklePitch" mute="0" unit="0">
+                    <Key frame="8" value="-2.28279" />
+                    <Key frame="17" value="-2.54646" />
+                    <Key frame="24" value="2.55127" />
+                    <Key frame="35" value="4.39699" />
+                    <Key frame="45" value="5.10013" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnkleRoll" mute="0" unit="0">
+                    <Key frame="8" value="7.56109" />
+                    <Key frame="17" value="8.08845" />
+                    <Key frame="24" value="8.61579" />
+                    <Key frame="35" value="4.66066" />
+                    <Key frame="45" value="3.34228" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowRoll" mute="0" unit="0">
+                    <Key frame="8" value="50.1007" />
+                    <Key frame="17" value="51.507" />
+                    <Key frame="24" value="53.089" />
+                    <Key frame="35" value="42.0147" />
+                    <Key frame="45" value="40.6084" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowYaw" mute="0" unit="0">
+                    <Key frame="8" value="79.2759" />
+                    <Key frame="17" value="86.3952" />
+                    <Key frame="24" value="89.6472" />
+                    <Key frame="35" value="87.8893" />
+                    <Key frame="45" value="87.9772" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHand" mute="0" unit="1">
+                    <Key frame="8" value="0.5008" />
+                    <Key frame="17" value="0.28" />
+                    <Key frame="24" value="0.14" />
+                    <Key frame="35" value="0.1532" />
+                    <Key frame="45" value="0.1532" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipPitch" mute="0" unit="0">
+                    <Key frame="8" value="27.73" />
+                    <Key frame="17" value="12.654" />
+                    <Key frame="24" value="18.4549" />
+                    <Key frame="35" value="16.7849" />
+                    <Key frame="45" value="16.6091" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipRoll" mute="0" unit="0">
+                    <Key frame="8" value="-11.7751" />
+                    <Key frame="17" value="-10.3688" />
+                    <Key frame="24" value="-11.7751" />
+                    <Key frame="35" value="-5.44688" />
+                    <Key frame="45" value="-4.48007" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipYawPitch" mute="0" unit="0">
+                    <Key frame="8" value="-18.1033" />
+                    <Key frame="17" value="-19.8611" />
+                    <Key frame="24" value="-20.1248" />
+                    <Key frame="35" value="-20.3006" />
+                    <Key frame="45" value="-20.0369" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RKneePitch" mute="0" unit="0">
+                    <Key frame="8" value="-5.18321" />
+                    <Key frame="17" value="4.66066" />
+                    <Key frame="24" value="-4.74374" />
+                    <Key frame="35" value="-4.2164" />
+                    <Key frame="45" value="-4.39218" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderPitch" mute="0" unit="0">
+                    <Key frame="8" value="103.627" />
+                    <Key frame="17" value="104.154" />
+                    <Key frame="24" value="105.56" />
+                    <Key frame="35" value="103.539" />
+                    <Key frame="45" value="104.154" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderRoll" mute="0" unit="0">
+                    <Key frame="8" value="-6.85796" />
+                    <Key frame="17" value="-8.35212" />
+                    <Key frame="24" value="-8.96736" />
+                    <Key frame="35" value="-9.58261" />
+                    <Key frame="45" value="-11.3404" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RWristYaw" mute="0" unit="0">
+                    <Key frame="8" value="-4.39699" />
+                    <Key frame="17" value="-4.39699" />
+                    <Key frame="24" value="-4.39699" />
+                    <Key frame="35" value="-4.39699" />
+                    <Key frame="45" value="-4.39699" />
+                  </ActuatorCurve>
+                </ActuatorList>
+              </Timeline>
+              <Resource name="Standing" type="Lock" timeout="1" />
+              <Resource name="All motors" type="Lock" timeout="1" />
+            </Box>
+            <Box name="OpenArmInFrontWithBump_01" id="10" localization="8" tooltip="ID : #01B 0005&#x0A;&#x0A;===================&#x0A;&#x0A;Tags : &#x0A;- You&#x0A;- Yourslef&#x0A;- Yours&#x0A;- Everybody&#x0A;&#x0A;===================&#x0A;&#x0A;Common dialog : No&#x0A;&#x0A;===================&#x0A;&#x0A;Start stance : Center&#x0A;End stance : Center" x="203" y="896">
+              <bitmap>media/images/box/movement/move.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+              <Timeline enable="1" fps="25" start_frame="1" end_frame="-1" size="25">
+                <ActuatorList model="">
+                  <ActuatorCurve name="value" actuator="HeadPitch" mute="0" unit="0">
+                    <Key frame="12" value="1.2" />
+                    <Key frame="21" value="-8.9" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="HeadYaw" mute="0" unit="0">
+                    <Key frame="21" value="0" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnklePitch" mute="0" unit="0">
+                    <Key frame="14" value="-5.01224" />
+                    <Key frame="25" value="4.8735" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnkleRoll" mute="0" unit="0">
+                    <Key frame="14" value="-7.02893" />
+                    <Key frame="25" value="-6.95974" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowRoll" mute="0" unit="0">
+                    <Key frame="14" value="-57.303" />
+                    <Key frame="23" value="-23.7372" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowYaw" mute="0" unit="0">
+                    <Key frame="14" value="-73.8315" />
+                    <Key frame="23" value="-94.6534" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHand" mute="0" unit="1">
+                    <Key frame="14" value="0.3168" />
+                    <Key frame="23" value="0.72" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipPitch" mute="0" unit="0">
+                    <Key frame="14" value="-3.42537" />
+                    <Key frame="25" value="7.07525" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipRoll" mute="0" unit="0">
+                    <Key frame="14" value="5.3638" />
+                    <Key frame="25" value="5.66523" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipYawPitch" mute="0" unit="0">
+                    <Key frame="14" value="-12.654" />
+                    <Key frame="25" value="-9.74028" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LKneePitch" mute="0" unit="0">
+                    <Key frame="14" value="14.6755" />
+                    <Key frame="25" value="-4.64829" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderPitch" mute="0" unit="0">
+                    <Key frame="14" value="52.6447" />
+                    <Key frame="23" value="45.9525" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderRoll" mute="0" unit="0">
+                    <Key frame="14" value="8.17153" />
+                    <Key frame="23" value="14.4939" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LWristYaw" mute="0" unit="0">
+                    <Key frame="14" value="-53.7042" />
+                    <Key frame="23" value="-70.0963" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnklePitch" mute="0" unit="0">
+                    <Key frame="14" value="-2.98591" />
+                    <Key frame="25" value="4.8735" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnkleRoll" mute="0" unit="0">
+                    <Key frame="14" value="6.3306" />
+                    <Key frame="25" value="6.95974" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowRoll" mute="0" unit="0">
+                    <Key frame="12" value="62.4055" />
+                    <Key frame="21" value="23.8086" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowYaw" mute="0" unit="0">
+                    <Key frame="12" value="83.5826" />
+                    <Key frame="21" value="94.6534" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHand" mute="0" unit="1">
+                    <Key frame="12" value="0.024" />
+                    <Key frame="21" value="0.72" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipPitch" mute="0" unit="0">
+                    <Key frame="14" value="-4.66066" />
+                    <Key frame="25" value="7.07525" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipRoll" mute="0" unit="0">
+                    <Key frame="14" value="-5.97423" />
+                    <Key frame="25" value="-5.66523" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipYawPitch" mute="0" unit="0">
+                    <Key frame="14" value="-12.654" />
+                    <Key frame="25" value="-9.74028" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RKneePitch" mute="0" unit="0">
+                    <Key frame="14" value="14.8561" />
+                    <Key frame="25" value="-4.64829" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderPitch" mute="0" unit="0">
+                    <Key frame="12" value="32.6981" />
+                    <Key frame="21" value="27.9395" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderRoll" mute="0" unit="0">
+                    <Key frame="12" value="-4.13332" />
+                    <Key frame="21" value="-14.4939" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RWristYaw" mute="0" unit="0">
+                    <Key frame="12" value="45.4376" />
+                    <Key frame="21" value="70.1928" />
+                  </ActuatorCurve>
+                </ActuatorList>
+              </Timeline>
+              <Resource name="Standing" type="Lock" timeout="1" />
+              <Resource name="All motors" type="Lock" timeout="1" />
+            </Box>
+            <Box name="PointAtSelfRightArm_01" id="48" localization="8" tooltip="ID : #01B 0007&#x0A;&#x0A;===================&#x0A;&#x0A;Tags : &#x0A;- Me&#x0A;- Myself&#x0A;- I&#x0A;&#x0A;===================&#x0A;&#x0A;Common dialog : No&#x0A;&#x0A;===================&#x0A;&#x0A;Start stance : Flex&#x0A;End stance : Center" x="45" y="891">
+              <bitmap>media/images/box/movement/move.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+              <Timeline enable="1" fps="25" start_frame="1" end_frame="-1" size="25">
+                <BehaviorLayer name="behavior_layer1">
+                  <BehaviorKeyframe name="keyframe1" index="1">
+                    <Diagram />
+                  </BehaviorKeyframe>
+                </BehaviorLayer>
+                <ActuatorList model="">
+                  <ActuatorCurve name="value" actuator="HeadPitch" mute="0" unit="0">
+                    <Key frame="13" value="12.1267" />
+                    <Key frame="23" value="-6.85796" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnklePitch" mute="0" unit="0">
+                    <Key frame="12" value="-9.58261" />
+                    <Key frame="22" value="-5.27591" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LAnkleRoll" mute="0" unit="0">
+                    <Key frame="12" value="-4.56796" />
+                    <Key frame="22" value="-4.2164" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowRoll" mute="0" unit="0">
+                    <Key frame="15" value="-53.3" />
+                    <Key frame="25" value="-27.6835" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LElbowYaw" mute="0" unit="0">
+                    <Key frame="15" value="-70.4" />
+                    <Key frame="25" value="-73.392" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHand" mute="0" unit="1">
+                    <Key frame="15" value="0.19" />
+                    <Key frame="25" value="0.6624" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipPitch" mute="0" unit="0">
+                    <Key frame="12" value="-3.95273" />
+                    <Key frame="22" value="2.72705" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipRoll" mute="0" unit="0">
+                    <Key frame="12" value="6.68218" />
+                    <Key frame="22" value="4.83644" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LHipYawPitch" mute="0" unit="0">
+                    <Key frame="12" value="-11.6872" />
+                    <Key frame="22" value="-9.66569" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LKneePitch" mute="0" unit="0">
+                    <Key frame="12" value="24.6073" />
+                    <Key frame="22" value="12.4782" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderPitch" mute="0" unit="0">
+                    <Key frame="15" value="76.5" />
+                    <Key frame="25" value="86.5709" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LShoulderRoll" mute="0" unit="0">
+                    <Key frame="15" value="12.8" />
+                    <Key frame="25" value="11.1598" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="LWristYaw" mute="0" unit="0">
+                    <Key frame="15" value="-45.7061" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-4.7632" ordinateParam="-15.8836" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="3.17547" ordinateParam="10.5891" />
+                    </Key>
+                    <Key frame="25" value="-21.7117" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-3.30702" ordinateParam="-5.02698" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="0" ordinateParam="0" />
+                    </Key>
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnklePitch" mute="0" unit="0">
+                    <Key frame="12" value="-5.79845" />
+                    <Key frame="22" value="2.02391" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RAnkleRoll" mute="0" unit="0">
+                    <Key frame="12" value="3.43018" />
+                    <Key frame="22" value="-0.0854867" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowRoll" mute="0" unit="0">
+                    <Key frame="13" value="49.3" />
+                    <Key frame="23" value="88.5" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RElbowYaw" mute="0" unit="0">
+                    <Key frame="13" value="61.346" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-3.21391" ordinateParam="20.6006" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="2.47225" ordinateParam="-15.8466" />
+                    </Key>
+                    <Key frame="23" value="21.5311" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHand" mute="0" unit="1">
+                    <Key frame="13" value="1" />
+                    <Key frame="23" value="0.45" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipPitch" mute="0" unit="0">
+                    <Key frame="12" value="1.93121" />
+                    <Key frame="22" value="10.9841" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipRoll" mute="0" unit="0">
+                    <Key frame="12" value="-0.173378" />
+                    <Key frame="22" value="2.37549" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RHipYawPitch" mute="0" unit="0">
+                    <Key frame="12" value="-11.6872" />
+                    <Key frame="22" value="-9.66569" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RKneePitch" mute="0" unit="0">
+                    <Key frame="12" value="15.1198" />
+                    <Key frame="22" value="-2.28279" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderPitch" mute="0" unit="0">
+                    <Key frame="13" value="55.9894" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-3.96019" ordinateParam="7.95114" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="3.0463" ordinateParam="-6.11625" />
+                    </Key>
+                    <Key frame="23" value="40.8721" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RShoulderRoll" mute="0" unit="0">
+                    <Key frame="13" value="-2.11181" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-4.33333" ordinateParam="-6.39629" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="3.33333" ordinateParam="4.92023" />
+                    </Key>
+                    <Key frame="23" value="9.31412" />
+                  </ActuatorCurve>
+                  <ActuatorCurve name="value" actuator="RWristYaw" mute="0" unit="0">
+                    <Key frame="13" value="60.2913" smooth="1" symmetrical="1">
+                      <Tangent side="left" interpType="bezier" abscissaParam="-4.24005" ordinateParam="7.72419" />
+                      <Tangent side="right" interpType="bezier" abscissaParam="3.26158" ordinateParam="-5.94168" />
+                    </Key>
+                    <Key frame="23" value="48.338" />
+                  </ActuatorCurve>
+                </ActuatorList>
+              </Timeline>
+              <Resource name="Standing" type="Lock" timeout="1" />
+              <Resource name="All motors" type="Lock" timeout="1" />
+            </Box>
+            <Box name="Vision Reco." id="11" localization="8" tooltip="Recognize pictures, objects and locations which are known by the robot.&#x0A;&#x0A;Note: the robot needs to learn the picture, object or location to be able to recognize&#x0A;it. The learning process can be done through the Video Monitor (in Choregraphe&#x0A;menu, click on View, then Video Monitor)." x="419" y="300">
+              <bitmap>media/images/box/interaction/reco.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        self.bIsRunning = True
+
+    def onInput_onStop(self):
+        if( self.bIsRunning ):
+            self.onUnload()
+            self.onStopped()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is stopped." id="4" />
+              <Output name="onPictureLabel" type="3" type_size="1" nature="2" inner="0" tooltip="Every time pictures/objects/locations are recognized, send the first picture recognized." id="5" />
+              <Output name="onNoPicture" type="1" type_size="1" nature="2" inner="0" tooltip="No picture, object or location has been recognized." id="6" />
+              <Timeline enable="0">
+                <BehaviorLayer name="behavior_layer1">
+                  <BehaviorKeyframe name="keyframe1" index="1">
+                    <Diagram>
+                      <Box name="Vision Reco." id="1" localization="8" tooltip="Recognize pictures, objects and locations which are already known by the robot.&#x0A;&#x0A;Note: the robot needs to learn the picture, object or location to be able to recognize&#x0A;it. The learning process can be done through the Video Monitor (in Choregraphe&#x0A;menu, click on View, then Video Monitor)." x="95" y="161">
+                        <bitmap>media/images/box/interaction/reco.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        self.bIsRunning = True
+
+    def onInput_onStop(self):
+        if( self.bIsRunning ):
+            self.onUnload()
+            self.onStopped()]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+                        <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+                        <Input name="PictureDetected" type="0" type_size="1" nature="4" stm_value_name="PictureDetected" inner="1" tooltip="Connected to ALMemory. Will be stimulated every time the value subscribed to changes, respecting the refresh period." id="4" />
+                        <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="5" />
+                        <Output name="onPictureLabel" type="0" type_size="1" nature="2" inner="0" tooltip="Every time pictures/objects/locations are recognized, send the result as&#x0A;[Picture_1, ..., Picture_N], with Picture_n = [label1,...,label_M]." id="6" />
+                        <Output name="onNoPicture" type="1" type_size="1" nature="2" inner="0" tooltip="No picture, object or location has been recognized." id="7" />
+                        <Timeline enable="0">
+                          <BehaviorLayer name="behavior_layer1">
+                            <BehaviorKeyframe name="keyframe1" index="1">
+                              <Diagram>
+                                <Box name="Process Reco." id="3" localization="8" tooltip="Process picture detection extractor data (PictureDetected) to extract the labels of&#x0A;recognized pictures, objects and locations, and notify when there is nothing&#x0A;of these recognized.&#x0A;&#x0A;An output (either one or the other) is stimulated each time the recognized&#x0A;pictures, objects and locations change." x="188" y="60">
+                                  <bitmap>media/images/box/interaction/reco.png</bitmap>
+                                  <script language="4">
+                                    <content>
+                                      <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.nPicturesDetected = -1
+
+    def onUnload(self):
+        #puts code for box cleanup here
+        pass
+
+    def onInput_onStart(self, p):
+        if(len(p) > 1):
+            self.nPicturesDetected = len(p[1])
+            labels = []
+            for s in p[1]:
+                labels.append(s[0])
+            self.onPictureLabel( labels )
+        else:
+            if(self.nPicturesDetected != 0):
+                self.nPicturesDetected = 0
+                self.onNoPicture()]]>
+                                    </content>
+                                  </script>
+                                  <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                                  <Input name="onStart" type="0" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input. It must be the&#x0A;PictureDetected extractor data." id="2" />
+                                  <Output name="onPictureLabel" type="0" type_size="1" nature="1" inner="0" tooltip="List of recognized pictures, objects and locations labels. It is sent regularly as&#x0A;long as they are recognized.&#x0A;&#x0A;For example, you could obtain this kind of result:&#x0A;[[&apos;cover&apos;, &apos;my book&apos;], [&apos;fridge corner&apos;, &apos;kitchen&apos;, &apos;my flat&apos;]]" id="3" />
+                                  <Output name="onNoPicture" type="1" type_size="1" nature="1" inner="0" tooltip="No picture, object or location is recognized." id="4" />
+                                </Box>
+                                <Link inputowner="3" indexofinput="2" outputowner="0" indexofoutput="4" />
+                                <Link inputowner="0" indexofinput="6" outputowner="3" indexofoutput="3" />
+                                <Link inputowner="0" indexofinput="7" outputowner="3" indexofoutput="4" />
+                              </Diagram>
+                            </BehaviorKeyframe>
+                          </BehaviorLayer>
+                        </Timeline>
+                      </Box>
+                      <Box name="ConvertIntoStrings" id="3" localization="8" tooltip='Convert the array of recognized objects into several strings sent one after another.&#x0A;&#x0A;For example, if the array is:&#x0A;[[&quot;page 3&quot;, &quot;Harry Potter&quot;], [&quot;bed&quot;, &quot;bedroom&quot;, &quot;home&quot;]]&#x0A;Then the output will be stimulated first with:&#x0A;&quot;Harry Potter page 3&quot;&#x0A;And then with:&#x0A;&quot;home bedroom bed&quot;' x="285" y="49">
+                        <bitmap>media/images/box/box-script.png</bitmap>
+                        <script language="4">
+                          <content>
+                            <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        #~ puts code for box initialization here
+        pass
+
+    def onUnload(self):
+        #~ puts code for box cleanup here
+        pass
+
+    def onInput_onStart(self, p):
+        for element in p:
+            element.reverse()
+            newElement = ""
+            for i in range(len(element)-1):
+                newElement += str(element[i]) + " "
+            if( len(element) > 0 ):
+                newElement += str(element[len(element)-1])
+            self.onStopped( newElement )
+            self.logger.info( newElement )]]>
+                          </content>
+                        </script>
+                        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                        <Input name="onStart" type="0" type_size="1" nature="1" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+                        <Output name="onStopped" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+                      </Box>
+                      <Link inputowner="1" indexofinput="2" outputowner="0" indexofoutput="2" />
+                      <Link inputowner="0" indexofinput="6" outputowner="1" indexofoutput="7" />
+                      <Link inputowner="3" indexofinput="2" outputowner="1" indexofoutput="6" />
+                      <Link inputowner="0" indexofinput="5" outputowner="3" indexofoutput="3" />
+                    </Diagram>
+                  </BehaviorKeyframe>
+                </BehaviorLayer>
+              </Timeline>
+            </Box>
+            <Box name="Create Object Representation" id="12" localization="8" tooltip="This box allows to simply store and remove objects from the world representation.&#x0A;&#x0A;Objects stored in the WorldRepresentation with this box can be visualized in the 3D robot view. See the other World Representation boxes for more details." x="155" y="575">
+              <bitmap>media/images/box/world_representation/world_rep.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    REMOVE_ON_QUIT_STR = "removeOnQuit"
+
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        import threading
+        self.lock = threading.Lock()
+
+    def onLoad(self):
+        try:
+            self.wr = self.session().service("ALWorldRepresentation")
+        except Exception as e:
+            self.onError(e)
+        self.objects = []
+        pass
+
+    def onUnload(self):
+        #put clean-up code here
+        if self.getParameter(self.REMOVE_ON_QUIT_STR):
+            for object in self.objects:
+                self.onInput_removeObject(str(object))
+        pass
+
+    def onInput_storeObject(self, p):
+        objectName = str()
+        parentName = "World"
+        categoryName = "UserObjects"
+        position = [0, 0, 0, 0, 0, 0]
+        try:
+            if isinstance(p, basestring):
+                raise Exception("%s is a string, not a list" % (p))
+            objectName = p[0]
+            if len(p) >= 2:
+                parentName = p[1]
+            if len(p) >= 3:
+                categoryName = p[2]
+            if len(p) == 4:
+                position = p[3]
+        except Exception as e:
+            self.logger.error("onInput_onStart(%s): error in parameters "\
+                "(see tooltip for details on expected parameter format)" % (p))
+            return
+        self.lock.acquire()
+        self.createCategory(categoryName)
+        self.storeObject(objectName, parentName, categoryName, position)
+        self.objects.append(objectName)
+        self.storageDone(objectName)
+        self.lock.release()
+
+    def onInput_removeObject(self, objectName):
+        if not isinstance(objectName, basestring):
+            self.logger.error("onInput_removeObject(%s): expected a string" \
+                " (see tooltip for details)" % (objectName))
+        self.lock.acquire()
+        self.removeObject(objectName)
+        try:
+            self.objects.remove(objectName)
+        except:
+            pass
+        self.removalDone(objectName)
+        self.lock.release()
+
+    def createCategory(self, categoryName):
+        ret = 0
+        try:
+            ret = self.wr.createObjectCategory(categoryName, False)
+        except Exception as e:
+            self.logger.warning("wr.createObjectCategory(%s, %s) error code: %s"
+                % (categoryName, False, e))
+
+    def storeObject(self, objectName, parentName, categoryName, position):
+        ret = 0
+        defaultAttributes = []
+        try:
+            ret = self.wr.storeObject(objectName, parentName, position, categoryName, defaultAttributes)
+        except Exception as e:
+            self.logger.warning("wr.storeObject(%s, %s, %s, %s, %s) error: %s"
+                % (objectName, parentName, position, categoryName, defaultAttributes, e))
+
+    def removeObject(self, objectName):
+        ret = 0
+        try:
+            ret = self.wr.clearObject(objectName)
+        except Exception as e:
+            self.logger.warning("wr.clearObject(%s) error: %s" % (objectName, e))]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="storeObject" type="0" type_size="1" nature="1" inner="0" tooltip="Store a new object in the World Representation.&#x0A;The parameters are expected as follows:&#x0A;[ObjectName, (ParentObjectName), (CategoryName), (Position)]&#x0A;&#x0A;ObjectName is a string that identifies the object in the World Representation.&#x0A;&#x0A;ParentObjectName is the string identifier of the parent object in the World Representation. &#x0A;The object will be added in the frame of the parent object.&#x0A;The parent name cannot be changed at runtime.&#x0A;If no value is provided, the object will be added in the default world frame.&#x0A;&#x0A;CategoryName is the string identifying the Category to put the object in.&#x0A;If no value is provided, the object will be added in the &apos;Default&apos; category.&#x0A;&#x0A;Position is a string with the following layout [x, y, z, Wx, Wy, Wz]. It is the position of the object in the frame of its parent.&#x0A;The default value is [0, 0, 0, 0, 0, 0]" id="2" />
+              <Input name="removeObject" type="3" type_size="1" nature="1" inner="0" tooltip="Removes an Object identified with the supplied string from the WorldRepresentation." id="3" />
+              <Output name="storageDone" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when the storage of the given object is finished." id="4" />
+              <Output name="removalDone" type="3" type_size="1" nature="2" inner="0" tooltip="Signal sent when the removal of the given object is finished." id="5" />
+              <Output name="onError" type="3" type_size="1" nature="2" inner="0" tooltip="Standard onError output." id="6" />
+              <Parameter name="removeOnQuit" inherits_from_parent="0" content_type="0" value="0" default_value="1" tooltip="Remove the created objects when quitting." id="7" />
+            </Box>
+            <Box name="Show Image" id="13" localization="8" tooltip="Display an image on the screen&#x0A;&#x0A;V2.0.0&#x0A;" x="416" y="430">
+              <bitmap>media/images/box/interaction/rec_movie.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+
+    def onLoad(self):
+        pass
+
+    def onUnload(self):
+        pass
+
+    def _getTabletService(self):
+        tabletService = None
+        try:
+            tabletService = self.session().service("ALTabletService")
+        except Exception as e:
+            self.logger.error(e)
+        return tabletService
+
+    def _getAbsoluteUrl(self, partial_url):
+        import os
+        subPath = os.path.join(self.packageUid(), os.path.normpath(partial_url).lstrip("\\/"))
+        # We create TabletService here in order to avoid
+        # problems with connections and disconnections of the tablet during the life of the application
+        return "http://%s/apps/%s" %(self._getTabletService().robotIp(), subPath.replace(os.path.sep, "/"))
+
+    def onInput_displayImage(self):
+        # We create TabletService here in order to avoid
+        # problems with connections and disconnections of the tablet during the life of the application
+        tabletService = self._getTabletService()
+        if tabletService:
+            try:
+                url = self.getParameter("ImageUrl")
+                if url == '':
+                    self.logger.error("URL of the image is empty")
+                if not url.startswith('http'):
+                    url = self._getAbsoluteUrl(url)
+                tabletService.showImage(url)
+            except Exception as err:
+                self.logger.error("Error during ShowImage : %s " % err)
+        else:
+            self.logger.warning("No ALTabletService, can't display the image.")
+        self.imageDisplayed()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="displayImage" type="1" type_size="1" nature="2" inner="0" tooltip="The image is shown on triggered." id="2" />
+              <Output name="imageDisplayed" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when the image has been displayed." id="3" />
+              <Parameter name="ImageUrl" inherits_from_parent="0" content_type="3" value="" default_value="" custom_choice="0" tooltip='path of the image inside the &quot;html&quot; folder (e.g. &quot;/images/myimage.png&quot;' id="4" />
+            </Box>
+            <Box name="Righ-open" id="14" localization="8" tooltip="the robot stiffens the motors of one or both of his hands so that he can open or close&#x0A;it/them. Then he relaxes the motors of his hand(s)." x="704" y="65">
+              <bitmap>media/images/box/movement/move_arm.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.motion = self.session().service( "ALMotion" )
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        if( self.bIsRunning ):
+            return
+        self.bIsRunning = True
+        try:
+            hands = []
+            if( self.getParameter("Side") in ["Left", "Both"] ):
+                hands.append( "LHand" )
+            if( self.getParameter("Side") in ["Right", "Both"] ):
+                hands.append( "RHand" )
+            motionOps = []
+            for hand in hands:
+                if( self.getParameter("Action") == "Open the hand" ):
+                    motionOps.append( self.motion.openHand(hand, _async=True) )
+                else:
+                    motionOps.append( self.motion.closeHand(hand, _async=True) )
+            for motionOp in motionOps:
+                motionOp.wait()
+        finally:
+            self.bIsRunning = False
+            self.onDone() # activate output of the box]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Output name="onDone" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+              <Parameter name="Side" inherits_from_parent="0" content_type="3" value="Right" default_value="Both" custom_choice="0" tooltip="Choose the hand to move or both of them." id="4">
+                <Choice value="Both" />
+                <Choice value="Left" />
+                <Choice value="Right" />
+              </Parameter>
+              <Parameter name="Action" inherits_from_parent="0" content_type="3" value="Open the hand" default_value="Open the hand" custom_choice="0" tooltip="Action you want to make on the robot&apos;s hand." id="5">
+                <Choice value="Open the hand" />
+                <Choice value="Close the hand" />
+              </Parameter>
+            </Box>
+            <Box name="Motor On/Off" id="15" localization="8" tooltip="Stiffen or loosen all motors. Does not work on Pepper, use wakeUp / rest boxes instead." x="43" y="1015">
+              <bitmap>media/images/box/movement/stiffness.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[import time
+
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.motion = self.session().service("ALMotion")
+
+    def onUnload(self):
+        pass
+
+    def onInput_onSet(self):
+        if( self.getParameter("Action") == "On" ):
+            stiffness = 1
+        else:
+            stiffness = 0
+        self.motion.stiffnessInterpolation("Body", stiffness, 0.1, _async=True)
+        time.sleep(0.1)
+        self.onReady() #~ activate output of the box]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onSet" type="1" type_size="1" nature="1" inner="0" tooltip="When this input is stimulated, all motors are stiffened or loosened." id="2" />
+              <Output name="onReady" type="1" type_size="1" nature="2" inner="0" tooltip="Signal sent when it is done." id="3" />
+              <Parameter name="Action" inherits_from_parent="0" content_type="3" value="On" default_value="On" custom_choice="0" tooltip="Choose if you want to stiffen (On) or loosen (Off) all motors." id="4">
+                <Choice value="Off" />
+                <Choice value="On" />
+              </Parameter>
+              <Resource name="All motors" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Move To" id="16" localization="8" tooltip="Make the robot move to a configured point relative to its current location." x="397" y="569">
+              <bitmap>media/images/box/movement/walk_forward.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+        self.positionErrorThresholdPos = 0.01
+        self.positionErrorThresholdAng = 0.03
+
+    def onLoad(self):
+        self.motion = self.session().service("ALMotion")
+
+    def onUnload(self):
+        self.motion.moveToward(0.0, 0.0, 0.0)
+
+    def onInput_onStart(self):
+        import almath
+        # The command position estimation will be set to the sensor position
+        # when the robot starts moving, so we use sensors first and commands later.
+        initPosition = almath.Pose2D(self.motion.getRobotPosition(True))
+        targetDistance = almath.Pose2D(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+        expectedEndPosition = initPosition * targetDistance
+        enableArms = self.getParameter("Arms movement enabled")
+        self.motion.setMoveArmsEnabled(enableArms, enableArms)
+        self.motion.moveTo(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+
+        # The move is finished so output
+        realEndPosition = almath.Pose2D(self.motion.getRobotPosition(False))
+        positionError = realEndPosition.diff(expectedEndPosition)
+        positionError.theta = almath.modulo2PI(positionError.theta)
+        if (abs(positionError.x) < self.positionErrorThresholdPos
+            and abs(positionError.y) < self.positionErrorThresholdPos
+            and abs(positionError.theta) < self.positionErrorThresholdAng):
+            self.onArrivedAtDestination()
+        else:
+            self.onStoppedBeforeArriving(positionError.toVector())
+
+    def onInput_onStop(self):
+        self.onUnload()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when Diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onArrivedAtDestination" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot arrives at its destination." id="4" />
+              <Output name="onStoppedBeforeArriving" type="0" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot stops before arriving to its destination. Returns a vector [x (m), y (m), theta(rad)] with the remaining distance up to the destination. This distance is expressed in the ROBOT frame." id="5" />
+              <Parameter name="Distance X (m)" inherits_from_parent="0" content_type="2" value="1" default_value="0.2" min="-5" max="10" tooltip="The distance in meters for forward/backward motion. Positive value&#x0A;means forward, negative value means backward." id="6" />
+              <Parameter name="Distance Y (m)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-5" max="5" tooltip="The distance in meters for lateral motion. Positive value means left, negative&#x0A;value means right." id="7" />
+              <Parameter name="Theta (deg)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-180" max="180" tooltip="The orientation in degrees for final rotation. Positive value means anticlockwise,&#x0A;negative value means clockwise." id="8" />
+              <Parameter name="Arms movement enabled" inherits_from_parent="0" content_type="0" value="1" default_value="1" tooltip="Enables natural motion of the arms." id="9" />
+              <Resource name="Legs" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Apply Posture (1)" id="19" localization="8" tooltip="Set directly all the joints of the robot in the asked posture." x="211" y="1020">
+              <bitmap>media/images/box/movement/setRobotPosture.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.postureService = self.session().service("ALRobotPosture")
+        pass
+
+    def onUnload(self):
+        self.postureService.stopMove()
+
+    def onInput_onStart(self):
+        result = self.postureService.applyPosture(self.getParameter("Name"), self.getParameter("Speed (%)")/100.)
+        if(result):
+            self.success()
+        else:
+            self.failure()
+        pass
+
+    def onInput_onStop(self):
+        self.onUnload() #~ it is recommanded to call onUnload of this box in a onStop method, as the code written in onUnload is used to stop the box as well
+        pass]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="success" type="1" type_size="1" nature="1" inner="0" tooltip="Stimulated if the posture has been reached." id="4" />
+              <Output name="failure" type="1" type_size="1" nature="1" inner="0" tooltip="Stimulated if the posture could not be reached." id="5" />
+              <Parameter name="Name" inherits_from_parent="0" content_type="3" value="Stand" default_value="Sit" custom_choice="1" tooltip="Name of the posture to go to." id="6">
+                <Choice value="Crouch" />
+                <Choice value="LyingBack" />
+                <Choice value="LyingBelly" />
+                <Choice value="Sit" />
+                <Choice value="SitRelax" />
+                <Choice value="StandInit" />
+                <Choice value="Stand" />
+                <Choice value="StandZero" />
+              </Parameter>
+              <Parameter name="Speed (%)" inherits_from_parent="0" content_type="1" value="80" default_value="100" min="0" max="100" tooltip="Speed to go to the posture." id="7" />
+              <Resource name="All motors" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Move To (1)" id="4" localization="8" tooltip="Make the robot move to a configured point relative to its current location." x="711" y="337">
+              <bitmap>media/images/box/movement/walk_forward.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+        self.positionErrorThresholdPos = 0.01
+        self.positionErrorThresholdAng = 0.03
+
+    def onLoad(self):
+        self.motion = self.session().service("ALMotion")
+
+    def onUnload(self):
+        self.motion.moveToward(0.0, 0.0, 0.0)
+
+    def onInput_onStart(self):
+        import almath
+        # The command position estimation will be set to the sensor position
+        # when the robot starts moving, so we use sensors first and commands later.
+        initPosition = almath.Pose2D(self.motion.getRobotPosition(True))
+        targetDistance = almath.Pose2D(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+        expectedEndPosition = initPosition * targetDistance
+        enableArms = self.getParameter("Arms movement enabled")
+        self.motion.setMoveArmsEnabled(enableArms, enableArms)
+        self.motion.moveTo(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+
+        # The move is finished so output
+        realEndPosition = almath.Pose2D(self.motion.getRobotPosition(False))
+        positionError = realEndPosition.diff(expectedEndPosition)
+        positionError.theta = almath.modulo2PI(positionError.theta)
+        if (abs(positionError.x) < self.positionErrorThresholdPos
+            and abs(positionError.y) < self.positionErrorThresholdPos
+            and abs(positionError.theta) < self.positionErrorThresholdAng):
+            self.onArrivedAtDestination()
+        else:
+            self.onStoppedBeforeArriving(positionError.toVector())
+
+    def onInput_onStop(self):
+        self.onUnload()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when Diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onArrivedAtDestination" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot arrives at its destination." id="4" />
+              <Output name="onStoppedBeforeArriving" type="0" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot stops before arriving to its destination. Returns a vector [x (m), y (m), theta(rad)] with the remaining distance up to the destination. This distance is expressed in the ROBOT frame." id="5" />
+              <Parameter name="Distance X (m)" inherits_from_parent="0" content_type="2" value="1" default_value="0.2" min="-5" max="10" tooltip="The distance in meters for forward/backward motion. Positive value&#x0A;means forward, negative value means backward." id="6" />
+              <Parameter name="Distance Y (m)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-5" max="5" tooltip="The distance in meters for lateral motion. Positive value means left, negative&#x0A;value means right." id="7" />
+              <Parameter name="Theta (deg)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-180" max="180" tooltip="The orientation in degrees for final rotation. Positive value means anticlockwise,&#x0A;negative value means clockwise." id="8" />
+              <Parameter name="Arms movement enabled" inherits_from_parent="0" content_type="0" value="1" default_value="1" tooltip="Enables natural motion of the arms." id="9" />
+              <Resource name="Legs" type="Lock" timeout="0" />
+            </Box>
+            <Box name="Righ-open (1)" id="17" localization="8" tooltip="the robot stiffens the motors of one or both of his hands so that he can open or close&#x0A;it/them. Then he relaxes the motors of his hand(s)." x="722" y="484">
+              <bitmap>media/images/box/movement/move_arm.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+
+    def onLoad(self):
+        self.motion = self.session().service( "ALMotion" )
+        self.bIsRunning = False
+
+    def onUnload(self):
+        self.bIsRunning = False
+
+    def onInput_onStart(self):
+        if( self.bIsRunning ):
+            return
+        self.bIsRunning = True
+        try:
+            hands = []
+            if( self.getParameter("Side") in ["Left", "Both"] ):
+                hands.append( "LHand" )
+            if( self.getParameter("Side") in ["Right", "Both"] ):
+                hands.append( "RHand" )
+            motionOps = []
+            for hand in hands:
+                if( self.getParameter("Action") == "Open the hand" ):
+                    motionOps.append( self.motion.openHand(hand, _async=True) )
+                else:
+                    motionOps.append( self.motion.closeHand(hand, _async=True) )
+            for motionOp in motionOps:
+                motionOp.wait()
+        finally:
+            self.bIsRunning = False
+            self.onDone() # activate output of the box]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Output name="onDone" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="3" />
+              <Parameter name="Side" inherits_from_parent="0" content_type="3" value="Right" default_value="Both" custom_choice="0" tooltip="Choose the hand to move or both of them." id="4">
+                <Choice value="Both" />
+                <Choice value="Left" />
+                <Choice value="Right" />
+              </Parameter>
+              <Parameter name="Action" inherits_from_parent="0" content_type="3" value="Open the hand" default_value="Open the hand" custom_choice="0" tooltip="Action you want to make on the robot&apos;s hand." id="5">
+                <Choice value="Open the hand" />
+                <Choice value="Close the hand" />
+              </Parameter>
+            </Box>
+            <Box name="Move To (2)" id="18" localization="8" tooltip="Make the robot move to a configured point relative to its current location." x="1106" y="22">
+              <bitmap>media/images/box/movement/walk_forward.png</bitmap>
+              <script language="4">
+                <content>
+                  <![CDATA[
+class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self, False)
+        self.positionErrorThresholdPos = 0.01
+        self.positionErrorThresholdAng = 0.03
+
+    def onLoad(self):
+        self.motion = self.session().service("ALMotion")
+
+    def onUnload(self):
+        self.motion.moveToward(0.0, 0.0, 0.0)
+
+    def onInput_onStart(self):
+        import almath
+        # The command position estimation will be set to the sensor position
+        # when the robot starts moving, so we use sensors first and commands later.
+        initPosition = almath.Pose2D(self.motion.getRobotPosition(True))
+        targetDistance = almath.Pose2D(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+        expectedEndPosition = initPosition * targetDistance
+        enableArms = self.getParameter("Arms movement enabled")
+        self.motion.setMoveArmsEnabled(enableArms, enableArms)
+        self.motion.moveTo(self.getParameter("Distance X (m)"),
+            self.getParameter("Distance Y (m)"),
+            self.getParameter("Theta (deg)") * almath.PI / 180)
+
+        # The move is finished so output
+        realEndPosition = almath.Pose2D(self.motion.getRobotPosition(False))
+        positionError = realEndPosition.diff(expectedEndPosition)
+        positionError.theta = almath.modulo2PI(positionError.theta)
+        if (abs(positionError.x) < self.positionErrorThresholdPos
+            and abs(positionError.y) < self.positionErrorThresholdPos
+            and abs(positionError.theta) < self.positionErrorThresholdAng):
+            self.onArrivedAtDestination()
+        else:
+            self.onStoppedBeforeArriving(positionError.toVector())
+
+    def onInput_onStop(self):
+        self.onUnload()]]>
+                </content>
+              </script>
+              <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when Diagram is loaded." id="1" />
+              <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+              <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+              <Output name="onArrivedAtDestination" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot arrives at its destination." id="4" />
+              <Output name="onStoppedBeforeArriving" type="0" type_size="1" nature="1" inner="0" tooltip="Signal sent when the robot stops before arriving to its destination. Returns a vector [x (m), y (m), theta(rad)] with the remaining distance up to the destination. This distance is expressed in the ROBOT frame." id="5" />
+              <Parameter name="Distance X (m)" inherits_from_parent="0" content_type="2" value="0.3" default_value="0.3" min="0" max="1" tooltip="The distance in meters for forward/backward motion. Positive value&#x0A;means forward, negative value means backward." id="6" />
+              <Parameter name="Distance Y (m)" inherits_from_parent="0" content_type="2" value="0" default_value="0" min="-5" max="5" tooltip="The distance in meters for lateral motion. Positive value means left, negative&#x0A;value means right." id="7" />
+              <Parameter name="Theta (deg)" inherits_from_parent="0" content_type="2" value="90" default_value="90" min="-180" max="180" tooltip="The orientation in degrees for final rotation. Positive value means anticlockwise,&#x0A;negative value means clockwise." id="8" />
+              <Parameter name="Arms movement enabled" inherits_from_parent="0" content_type="0" value="1" default_value="1" tooltip="Enables natural motion of the arms." id="9" />
+              <Resource name="Legs" type="Lock" timeout="0" />
+            </Box>
+            <Link inputowner="6" indexofinput="2" outputowner="5" indexofoutput="4" />
+            <Link inputowner="12" indexofinput="2" outputowner="6" indexofoutput="3" />
+            <Link inputowner="11" indexofinput="2" outputowner="12" indexofoutput="4" />
+            <Link inputowner="5" indexofinput="2" outputowner="9" indexofoutput="4" />
+            <Link inputowner="13" indexofinput="2" outputowner="11" indexofoutput="5" />
+            <Link inputowner="16" indexofinput="2" outputowner="13" indexofoutput="3" />
+            <Link inputowner="14" indexofinput="2" outputowner="16" indexofoutput="4" />
+            <Link inputowner="1" indexofinput="2" outputowner="12" indexofoutput="4" />
+            <Link inputowner="3" indexofinput="2" outputowner="1" indexofoutput="4" />
+            <Link inputowner="11" indexofinput="2" outputowner="3" indexofoutput="4" />
+            <Link inputowner="7" indexofinput="2" outputowner="14" indexofoutput="3" />
+            <Link inputowner="4" indexofinput="2" outputowner="7" indexofoutput="3" />
+            <Link inputowner="17" indexofinput="2" outputowner="4" indexofoutput="4" />
+            <Link inputowner="18" indexofinput="2" outputowner="0" indexofoutput="2" />
+            <Link inputowner="0" indexofinput="4" outputowner="18" indexofoutput="4" />
+          </Diagram>
+        </BehaviorKeyframe>
+      </BehaviorLayer>
+    </Timeline>
+  </Box>
+</ChoregrapheProject>

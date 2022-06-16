@@ -1,0 +1,38 @@
+
+# Defining extra concepts out of words or group of words
+#concept:(hello) [hello hi hey "good morning" greetings]
+
+# Catching inputs and triggering outputs
+#u:(e:onStart) $onStopped=1
+
+# Replying to speech
+#u:(~hello) ~hello
+
+topic: ~get_name()
+language: English
+
+# Add extra letters here if needed
+concept:(letter) [a b c d e f g h i j k l m n o p q r s t u v w x y z]
+
+# Different ways to say "stop"
+concept:(stop) [finish finished stop done]
+
+# What to say when the dialog is started from a box,
+# with the name of the owner given as an argument.
+u:(e:onStart _)
+    Hello human. ^first["My current owner is $onStart . Do you want to change it?" "I have no current owner. Do you want to set it?"].
+
+    u1:(yes)
+        Okay, then spell your name say stop when you're done! $spellingStarted=1
+
+        # Get the letter as an input, repeat it, output it
+        # from the box and wait again for another letter
+        u2:(_~letter)
+            $1 $nextLetterGiven=$1 ^stayInScope
+
+        u2:(~stop)
+            Okay $spellingStopped=1
+
+    u1:(no)
+        Okay $onStopped=1
+   

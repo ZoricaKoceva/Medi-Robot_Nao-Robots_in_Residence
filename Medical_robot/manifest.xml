@@ -1,0 +1,70 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package installOnlyAtStartup="false" uuid="medical_robot-147a94" version="0.0.0">
+ <names>
+  <name lang="en_US">Medical_care_robot</name>
+ </names>
+ <descriptions>
+  <description lang="en_US">Апликацијата која роботот ќе ја користи има за цел да пружи помош, да воспостави врска со пациентите и да покажува известувања. Стои на располагање за секого, учтив е и добродушен кој сочувствува со своите пациенти.</description>
+ </descriptions>
+ <supportedLanguages>
+  <language>en_US</language>
+ </supportedLanguages>
+ <descriptionLanguages>
+  <language>en_US</language>
+ </descriptionLanguages>
+ <contents>
+  <behaviorContent path="English">
+   <userRequestable/>
+   <nature>interactive</nature>
+   <names>
+    <name lang="en_US">Поздравување</name>
+   </names>
+   <descriptions>
+    <description lang="en_US">Поздравување од страна на роботот</description>
+   </descriptions>
+   <triggerSentences>
+    <sentence lang="en_US">Koi ste vie?</sentence>
+    <sentence lang="en_US">Kako mozham da vi pomognam?</sentence>
+    <sentence lang="en_US">Dali ste dobri?</sentence>
+   </triggerSentences>
+   <autonomous/>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="dijagnostika">
+   <nature>interactive</nature>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="Dvizhenje">
+   <nature>interactive</nature>
+   <autonomous/>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="Fakja-Zema">
+   <nature>interactive</nature>
+   <autonomous/>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="Pacient_detekcija">
+   <nature>interactive</nature>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="get_name_activity">
+   <nature>interactive</nature>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="rezultati">
+   <nature>interactive</nature>
+   <autonomous/>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="govor">
+   <nature>interactive</nature>
+   <autonomous/>
+   <permissions/>
+  </behaviorContent>
+  <behaviorContent path="wearingMask">
+   <nature>interactive</nature>
+   <permissions/>
+  </behaviorContent>
+ </contents>
+</package>
